@@ -1,9 +1,9 @@
 class PrototypesController < ApplicationController
-  before_action :authenticate_user!, except:[:create, :edit, :destroy]
-  before_action :move_to_index, except: [:index, :edit]
+  before_action :authenticate_user!, except:[:index, :show]
 
   def index
-    @prototypes = Prototype.all
+    @prototype = Prototype.new
+    @prototypes = Prototype.includes(:user)
   end
 
   def new
@@ -12,6 +12,7 @@ class PrototypesController < ApplicationController
 
   def create
     @prototype = Prototype.new(prototype_params)
+    @prototype = Prototype.find(params[:id])
     if @prototype.save
       redirect_to root_path
     else
@@ -20,19 +21,19 @@ class PrototypesController < ApplicationController
   end
 
   def show
-    @prototype = Prototype.new
     @prototype = Prototype.find(params[:id])
     @comment = Comment.new
     @comments = @prototype.comments
   end
 
   def edit
-    @prototype = Prototype.new
     @prototype = Prototype.find(params[:id])
+    unless current_user.id == @prototype.user_id
+      redirect_to action: :index
+    end
   end
   
   def update
-    @prototype = Prototype.find(params[:id])
     if @prototype.update(prototype_params)
       redirect_to prototype_path(@prototype)
     else
@@ -41,7 +42,6 @@ class PrototypesController < ApplicationController
   end
 
   def destroy
-    prototype = Prototype.find(params[:id])
     prototype.destroy
     redirect_to  prototypes_path(@prototype)
   end
@@ -52,10 +52,5 @@ class PrototypesController < ApplicationController
     params.require(:prototype).permit(:title,:catch_copy,:concept,:image).merge(user_id: current_user.id)
   end
 
-  def move_to_index
-    unless current_user = @prototype.user
-      redirect_to action: :index
-    end
-  end
 
 end
